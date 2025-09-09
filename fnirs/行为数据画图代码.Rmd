@@ -1,0 +1,190 @@
+行为数据画图代码
+
+1.宏包加载
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(car)
+library(afex)
+library(gridExtra)
+library(grid)
+library(ggsignif)
+```
+
+2.加载数据（行为实验2）
+```{r}
+data_inhi <- read.csv("F:/桌面文件夹/近红外论文/行为数据/实验一行为数据/inhi.csv")
+data_nback <- read.csv("F:/桌面文件夹/近红外论文/行为数据/实验一行为数据/nback.csv")
+data_shift <- read.csv("F:/桌面文件夹/近红外论文/行为数据/实验一行为数据/shift.csv")
+```
+
+3.1 inhi
+```{r}
+data_inhi1 = data.frame(data_inhi$stim.frequence, data_inhi$抑制效应.比例..1, data_inhi$抑制效应.比例..2) 
+# 更名
+names(data_inhi1) <- c("stim.frequence","pre-stimulation","stimulating")
+data_inhi1 <- pivot_longer(data = data_inhi1, cols = c("pre-stimulation", "stimulating"), names_to = "pre_post", values_to = "inhi_score")
+data_inhi1$stim.frequence <- as.factor(data_inhi1$stim.frequence)
+data_inhi1$pre_post <- factor(data_inhi1$pre_post, levels = c("pre-stimulation", "stimulating"))
+ plot1 <- ggplot(data_inhi1, aes(x = stim.frequence, y = inhi_score, group = interaction(stim.frequence, pre_post), fill = pre_post)) + 
+  geom_boxplot(width = 0.4, position = position_dodge(width = 0.5), color = "black", alpha = 0.8) +
+  geom_point(position = position_dodge(width = 0.5), size = 3, color = "black", alpha = 0.6,outlier.shape = NA) +
+  labs(x = "Stimulation Frequency (Hz)", y = "inhibition scores",caption = " Interaction(stim.frequence × pre-post) :p=0.035*")+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 8),
+        plot.caption = element_text(hjust = 0)) +
+  scale_fill_brewer(palette = "Set1")
+
+plot1
+```
+
+```{r}
+data_inhi1_summary <- data_inhi1 %>%
+  group_by(stim.frequence, pre_post) %>%
+  summarise(mean_score = mean(inhi_score),
+            sem_score = sd(inhi_score) / sqrt(n()))
+
+plot11 <- ggplot(data_inhi1_summary, aes(x = pre_post, y = mean_score, group = stim.frequence, color = stim.frequence)) + 
+  geom_line(size = 1, position = position_dodge(width = 0.5)) +
+  geom_point(data = data_inhi1, aes(x = pre_post, y = inhi_score, fill = stim.frequence), 
+             position = position_dodge(width = 0.5), shape = 21, fill = "white", size = 3) + 
+  geom_errorbar(aes(ymin = mean_score - 3*sem_score, ymax = mean_score + 3*sem_score), width = 0.2, 
+                position = position_dodge(width = 0.5), linetype = 1, size = 0.5) + # 细化误差线
+  labs(x = "Stimulation state", y = "Inhibition scores") +
+  theme_minimal() +
+  theme(plot.title = element_text(size =15, face = "bold"),
+        legend.position = "bottom",
+        legend.title = element_text(size = 12, face = "bold"), # 加粗图例标题
+        legend.text = element_text(size = 12),
+        legend.key.width = unit(1.5, "line"), # 增加图例间距
+        legend.spacing.x = unit(0.5, 'cm'), # 图例项之间间距
+        axis.title = element_text(size = 12, face = "bold"), # 加粗坐标轴标题
+        axis.text.x = element_text(size = 12,hjust = 1)) + 
+  theme(panel.grid.major = element_line(color = "gray", linetype = "dotted", size = 0.25), # 细化主网格线
+        panel.grid.minor = element_blank())+ scale_color_manual(values = c("#F8766D", "#00BA38"))
+
+plot11
+
+```
+
+```{r}
+setwd("F:/桌面文件夹/近红外论文/图片")
+ggsave("inhi1.jpg", plot11, width = 6, height = 4, units = "in", dpi = 300)
+```
+
+
+3.2 updating
+```{r}
+ data_nback1 = data.frame(data_nback$stim.frequence, data_nback$刷新分数.比例._1, data_nback$刷新分数.比例._2) 
+ # 更名
+names(data_nback1) <- c("stim.frequence","pre-stimulation","stimulating")
+data_nback1 <- pivot_longer(data = data_nback1, cols = c("pre-stimulation", "stimulating"), names_to = "pre_post", values_to = "refresh_score")
+data_nback1$stim.frequence <- as.factor(data_nback1$stim.frequence)
+data_nback1$pre_post <- factor(data_nback1$pre_post, levels = c("pre-stimulation", "stimulating"))
+
+plot2 <- ggplot(data_nback1, aes(x = stim.frequence, y = refresh_score, group = interaction(stim.frequence, pre_post), fill = pre_post)) +
+  geom_boxplot(width = 0.4, position = position_dodge(width = 0.5), color = "black", alpha = 0.8) +
+  geom_point(position = position_dodge(width = 0.5), size = 3, color = "black", alpha = 0.6) +
+  labs(x = "Stimulation Frequency (Hz)", y = "refresh scores",caption = " Interaction(stim.frequence × pre-post) :p=0.035*")+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 8)) +
+  scale_fill_brewer(palette = "Set1")
+plot2
+```
+
+```{r}
+data_nack_summary <- data_nback1 %>%
+  group_by(stim.frequence, pre_post) %>%
+  summarise(mean_score = mean(refresh_score),
+            sem_score = sd(refresh_score) / sqrt(n()))
+
+plot22 <- ggplot(data_nack_summary, aes(x = pre_post, y = mean_score, group = stim.frequence, color = stim.frequence)) + 
+  geom_line(size = 1, position = position_dodge(width = 0.5)) +
+  geom_point(data = data_nback1, aes(x = pre_post, y = refresh_score, color = stim.frequence), 
+             position = position_dodge(width = 0.5), shape = 21, fill = "white", size = 3) + 
+  geom_errorbar(aes(ymin = mean_score - 3*sem_score, ymax = mean_score + 3*sem_score), width = 0.2, 
+                position = position_dodge(width = 0.5), linetype = 1, size = 0.5) + # 细化误差线
+  labs(x = "Stimulation state", y = "Updating scores") +
+  theme_minimal() +
+  theme(plot.title = element_text(size =15, face = "bold"),
+        legend.position = "bottom",
+        legend.title = element_text(size = 12, face = "bold"), # 加粗图例标题
+        legend.text = element_text(size = 12),
+        legend.key.width = unit(1.5, "line"), # 增加图例间距
+        legend.spacing.x = unit(0.5, 'cm'), # 图例项之间间距
+        axis.title = element_text(size = 12, face = "bold"), # 加粗坐标轴标题
+        axis.text.x = element_text(size = 12,hjust = 1)) + 
+  theme(panel.grid.major = element_line(color = "gray", linetype = "dotted", size = 0.25), # 细化主网格线
+        panel.grid.minor = element_blank())+ scale_color_manual(values = c("#F8766D", "#00BA38"))
+
+
+plot22
+
+```
+```{r}
+setwd("F:/桌面文件夹/近红外论文/图片")
+ggsave("refresh1.jpg", plot22, width = 6, height = 4, units = "in", dpi = 300)
+```
+
+3.3 shift
+```{r}
+data_shift1 = data.frame(data_shift$stim.frequence, data_shift$相对转换代价b1, data_shift$相对转换代价b2) 
+ # 更名
+ names(data_shift1) <- c("stim.frequence","pre-stimulation","stimulating")
+ data_shift1 <- pivot_longer(data = data_shift1, cols = c("pre-stimulation", "stimulating"), names_to = "pre_post", values_to = "switch_score")
+ data_shift1$stim.frequence <- as.factor(data_shift1$stim.frequence)
+ data_shift1$pre_post <- factor(data_shift1$pre_post, levels = c("pre-stimulation", "stimulating"))
+
+plot3 <- ggplot(data_shift1, aes(x = stim.frequence, y = switch_score, group = interaction(stim.frequence, pre_post), fill = pre_post)) +
+  geom_boxplot(width = 0.4, position = position_dodge(width = 0.5), color = "black", alpha = 0.8) +
+  geom_point(position = position_dodge(width = 0.5), size = 3, color = "black", alpha = 0.6) +
+  labs(x = "Stimulation Frequency (Hz)", y = "switch scores", caption = " Interaction(stim.frequence × pre-post) :p=0.194*")+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 8)) +
+  scale_fill_brewer(palette = "Set1")
+plot3
+```
+
+```{r}
+data_shift_summary <- data_shift1 %>%
+  group_by(stim.frequence, pre_post) %>%
+  summarise(mean_score = mean(switch_score),
+            sem_score = sd(switch_score) / sqrt(n()))
+
+plot33 <- ggplot(data_shift_summary, aes(x = pre_post, y = mean_score, group = stim.frequence, color = stim.frequence)) + 
+  geom_line(size = 1, position = position_dodge(width = 0.5)) +
+  geom_point(data = data_shift1, aes(x = pre_post, y = switch_score, color = stim.frequence), 
+             position = position_dodge(width = 0.5), shape = 21, fill = "white", size = 3) + 
+  geom_errorbar(aes(ymin = mean_score - 3*sem_score, ymax = mean_score + 3*sem_score), width = 0.2, 
+                position = position_dodge(width = 0.5), linetype = 1, size = 0.5) + # 细化误差线
+  labs(x = "Stimulation state", y = "Shift scores") +
+  theme_minimal() +
+  theme(plot.title = element_text(size =15, face = "bold"),
+        legend.position = "bottom",
+        legend.title = element_text(size = 12, face = "bold"), # 加粗图例标题
+        legend.text = element_text(size = 12),
+        legend.key.width = unit(1.5, "line"), # 增加图例间距
+        legend.spacing.x = unit(0.5, 'cm'), # 图例项之间间距
+        axis.title = element_text(size = 12, face = "bold"), # 加粗坐标轴标题
+        axis.text.x = element_text(size = 12,hjust = 1)) + 
+  theme(panel.grid.major = element_line(color = "gray", linetype = "dotted", size = 0.25), # 细化主网格线
+        panel.grid.minor = element_blank())+ scale_color_manual(values = c("#F8766D", "#00BA38"))
+
+
+plot33
+```
+```{r}
+setwd("F:/桌面文件夹/近红外论文/图片")
+ggsave("shift1.jpg", plot33, width = 6, height = 4, units = "in", dpi = 300)
+```
